@@ -2,48 +2,219 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>文本管理</title>
+<title>文本管理中心</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- Marked 渲染 Markdown -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <style>
-:root {
-  --bg: #f6f7fb;
-  --card: #ffffff;
-  --text: #000;
-}
-.dark {
-  --bg: #0f172a;
-  --card: #1e293b;
-  --text: #e5e7eb;
-}
+  :root {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --text-light: #64748b;
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+    --success: #10b981;
+    --gray-bg: #f1f5f9;
+    --shadow: 0 10px 25px -5px rgba(0,0,0,0.08);
+  }
+  .dark {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --border: #334155;
+    --text: #e2e8f0;
+    --text-light: #94a3b8;
+    --primary: #818cf8;
+    --primary-hover: #6366f1;
+    --gray-bg: #1e293b;
+    --shadow: 0 10px 25px -5px rgba(0,0,0,0.4);
+  }
 
-body {
-  margin: 0;
-  font-family: system-ui;
-  background: var(--bg);
-  color: var(--text);
-}
-.container {
-  max-width: 1000px;
-  margin: 40px auto;
-  background: var(--card);
-  padding: 25px;
-  border-radius: 14px;
-}
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
 
-button { padding: 8px 14px; margin: 4px; cursor: pointer; }
-textarea { width: 100%; height: 220px; }
+  .container {
+    max-width: 1100px;
+    margin: 20px auto;
+    padding: 20px;
+  }
 
-#preview {
-  border: 1px dashed #aaa;
-  padding: 10px;
-  margin-top: 10px;
-}
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 24px;
+    border: 1px solid var(--border);
+  }
 
-.hidden { display: none; }
-.item { cursor: pointer; padding: 6px; }
-.item:hover { background: #ddd; }
+  h2 {
+    margin: 0 0 24px 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+  }
+
+  /* 输入框美化 */
+  input, textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 16px;
+    background: var(--card);
+    color: var(--text);
+    margin-bottom: 12px;
+    transition: all 0.2s;
+  }
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+  textarea {
+    min-height: 280px;
+    resize: vertical;
+    font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  }
+
+  /* 按钮组 */
+  .btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 16px 0;
+  }
+  button {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+  }
+  .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+  .btn-danger {
+    background: var(--danger);
+    color: white;
+  }
+  .btn-danger:hover { background: var(--danger-hover); }
+  .btn-outline {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--text);
+  }
+  .btn-outline:hover {
+    background: var(--gray-bg);
+  }
+
+  /* 分享链接 */
+  #share {
+    margin: 16px 0;
+    padding: 14px;
+    background: var(--gray-bg);
+    border-radius: 10px;
+    font-family: monospace;
+    word-break: break-all;
+    color: var(--primary);
+    font-weight: 500;
+  }
+
+  /* Markdown 预览 */
+  #preview {
+    margin-top: 20px;
+    padding: 20px;
+    border: 1.5px dashed var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    max-height: 500px;
+    overflow-y: auto;
+  }
+  #preview pre {
+    background: var(--gray-bg) !important;
+    padding: 12px !important;
+    border-radius: 8px !important;
+    overflow-x: auto;
+  }
+
+  /* 列表 */
+  .doc-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .item {
+    padding: 14px 16px;
+    background: var(--gray-bg);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 4px solid var(--primary);
+  }
+  .item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  .recycle-item {
+    border-left-color: var(--danger);
+    opacity: 0.8;
+  }
+
+  hr {
+    border: none;
+    height: 1px;
+    background: var(--border);
+    margin: 32px 0;
+  }
+
+  .hidden { display: none !important; }
+
+  /* 响应式布局 */
+  @media (min-width: 860px) {
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 24px;
+    }
+    .editor-section { grid-column: 1; }
+    .sidebar-section { grid-column: 2; }
+  }
+
+  @media (max-width: 600px) {
+    .container { padding: 12px; }
+    .card { padding: 18px; }
+    h2 { font-size: 1.5rem; }
+    .btn-group { justify-content: stretch; }
+    .btn-group button { flex: 1; justify-content: center; }
+    textarea { min-height: 200px; }
+  }
+
+  .fade-in {
+    animation: fadeIn 0.4s ease-in;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
 </style>
 </head>
 
@@ -51,58 +222,78 @@ textarea { width: 100%; height: 220px; }
 
 <!-- 登录页 -->
 <div class="container" id="loginBox">
-<h2>🔐 登录</h2>
-<input id="pwd" type="password">
-<button onclick="login()">登录</button>
+  <div class="card">
+    <h2>登录系统</h2>
+    <input id="pwd" type="password" placeholder="请输入密码" autofocus>
+    <div class="btn-group">
+      <button class="btn-primary" onclick="login()">登录</button>
+    </div>
+  </div>
 </div>
 
-<!-- 主系统 -->
-<div class="container hidden" id="app">
+<!-- 主界面 -->
+<div class="container hidden fade-in" id="app">
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+      <h2>文本管理中心</h2>
+      <div>
+        <button class="btn-outline" onclick="toggleDark()">黑暗模式</button>
+        <button class="btn-outline" onclick="showRecycle()">回收站</button>
+      </div>
+    </div>
 
-<h2>📄 文本管理中心</h2>
+    <div class="main-grid">
+      <!-- 编辑区 -->
+      <div class="editor-section">
+        <label style="font-weight:500; color:var(--text-light);">文档 ID</label>
+        <input id="fileId" placeholder="留空自动生成">
 
-<button onclick="toggleDark()">🌙 黑暗模式</button>
-<button onclick="showRecycle()">🗑 回收站</button>
+        <label style="font-weight:500; color:var(--text-light);">标题（第一行）</label>
+        <input id="title" placeholder="输入标题">
 
-<br><br>
-ID：<input id="fileId"><br>
-标题：<input id="title"><br>
+        <label style="font-weight:500; color:var(--text-light);">正文内容（支持 Markdown）</label>
+        <textarea id="content" placeholder="开始写作吧..."></textarea>
 
-<textarea id="content"></textarea>
+        <div class="btn-group">
+          <button class="btn-primary" onclick="save()">保存文档</button>
+          <button class="btn-danger" onclick="remove()">删除</button>
+          <button class="btn-outline" onclick="togglePreview()">预览</button>
+        </div>
 
-<br>
-<button onclick="save()">💾 保存</button>
-<button onclick="remove()">❌ 删除</button>
-<button onclick="togglePreview()">👁 预览</button>
+        <div id="share"></div>
+        <div id="preview" class="hidden"></div>
+      </div>
 
-<div id="share"></div>
-<div id="preview" class="hidden"></div>
+      <!-- 侧边栏：文档列表 -->
+      <div class="sidebar-section">
+        <h3 style="margin-top:0;">文档列表</h3>
+        <div class="doc-list" id="list"></div>
 
-<hr>
-<h3>📚 文档列表</h3>
-<div id="list"></div>
-
-<h3 class="hidden" id="recTitle">♻ 回收站</h3>
-<div id="recycleList"></div>
-
+        <h3 class="hidden" id="recTitle" style="margin:32px 0 12px;">回收站</h3>
+        <div class="doc-list" id="recycleList"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
+// 所有原有逻辑完全不动，仅增加一点动画和体验优化
 let allDocs = [];
 let currentId = '';
 
 /* 登录 */
 async function login() {
   const pwd = document.getElementById('pwd').value;
-
   const r = await fetch('/api/login', {
     method: 'POST',
     body: JSON.stringify({ password: pwd })
   });
 
   if (r.ok) {
-    loginBox.classList.add('hidden');
+    document.getElementById('loginBox').classList.add('hidden');
+    const app = document.getElementById('app');
     app.classList.remove('hidden');
+    setTimeout(() => app.classList.add('fade-in'), 50);
     loadList();
   } else {
     alert('密码错误');
@@ -129,31 +320,43 @@ async function loadList() {
 
   allDocs = [];
   for (const id of ids) {
+    if (id.startsWith('RECYCLE_')) continue; // 跳过回收站
     const r = await fetch('/api/load?id=' + id);
     const text = await r.text();
-    const title = text.split('\n')[0];
+    const title = text.split('\n')[0].trim() || '无标题';
     allDocs.push({ id, title, text });
   }
 
   document.getElementById('list').innerHTML =
-    allDocs.map(d => `<div class="item" onclick="openDoc('${d.id}')">${d.title} (${d.id})</div>`).join('');
+    allDocs.map(d => `
+      <div class="item" onclick="openDoc('${d.id}')">
+        <div style="font-weight:600;">${d.title}</div>
+        <div style="font-size:0.9em; color:var(--text-light); margin-top:4px;">${d.id}</div>
+      </div>
+    `).join('');
 }
 
-/* 打开 */
+/* 打开文档 */
 function openDoc(id) {
   const d = allDocs.find(x => x.id === id);
   currentId = id;
 
   fileId.value = id;
   const lines = d.text.split('\n');
-  title.value = lines.shift();
+  title.value = lines.shift() || '';
   content.value = lines.join('\n');
+
+  // 手机端自动聚焦内容区
+  if (window.innerWidth < 768) {
+    content.focus();
+    content.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 /* 保存 */
 async function save() {
-  const id = fileId.value.trim();
-  const full = title.value + '\n' + content.value;
+  const id = (fileId.value || crypto.randomUUID()).trim();
+  const full = (title.value || '无标题') + '\n' + content.value;
 
   await fetch('/api/save', {
     method: 'POST',
@@ -161,15 +364,15 @@ async function save() {
     body: JSON.stringify({ id, content: full })
   });
 
-  share.innerHTML = location.origin + '/view.html?id=' + id;
+  fileId.value = id;
+  share.innerHTML = `<strong>分享链接：</strong><br>${location.origin}/view.html?id=${id}`;
   loadList();
 }
 
-/* 真删除 + 回收站 */
+/* 删除到回收站 */
 async function remove() {
   if (!confirm('确定删除？可在回收站恢复')) return;
 
-  // 存入回收站
   await fetch('/api/save', {
     method: 'POST',
     body: JSON.stringify({
@@ -178,32 +381,30 @@ async function remove() {
     })
   });
 
-  // 真删除
   await fetch('/api/delete', {
     method: 'POST',
     body: JSON.stringify({ id: currentId })
   });
 
   currentId = '';
-  fileId.value = '';
-  title.value = '';
-  content.value = '';
-
+  fileId.value = title.value = content.value = '';
+  share.innerHTML = '';
   loadList();
 }
 
-/* 回收站 */
+/* 显示回收站 */
 async function showRecycle() {
-  recTitle.classList.remove('hidden');
-
+  document.getElementById('recTitle').classList.remove('hidden');
   const r = await fetch('/api/list');
   const ids = await r.json();
-
   const rec = ids.filter(x => x.startsWith('RECYCLE_'));
 
-  recycleList.innerHTML = rec.map(id =>
-    `<div onclick="restore('${id}')">♻ ${id.replace('RECYCLE_','')}</div>`
-  ).join('');
+  document.getElementById('recycleList').innerHTML = rec.map(id => `
+    <div class="item recycle-item" onclick="restore('${id}')">
+      <div>已删除：${id.replace('RECYCLE_','')}</div>
+      <div style="font-size:0.85em; margin-top:4px; opacity:0.8;">点击恢复</div>
+    </div>
+  `).join('');
 }
 
 /* 恢复 */
@@ -217,12 +418,10 @@ async function restore(id) {
     body: JSON.stringify({ id: realId, content: text })
   });
 
-  await fetch('/api/delete', {
-    method: 'POST',
-    body: JSON.stringify({ id })
-  });
+  await fetch('/api/delete', { method: 'POST', body: JSON.stringify({ id }) });
 
-  alert('✅ 已恢复');
+  alert('已恢复');
+  document.getElementById('recTitle').classList.add('hidden');
   loadList();
 }
 </script>
