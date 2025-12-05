@@ -1,122 +1,21 @@
-<!-- 新版 Cloudflare 文本系统：含真正删除、新建按钮、自适应 UI -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>文本存储系统</title>
-<style>
-    body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: #f4f4f4;
-        padding: 0 15px;
-    }
-    header {
-        text-align: center;
-        padding: 20px 10px;
-        font-size: 22px;
-        font-weight: bold;
-    }
-    #controls {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 15px;
-    }
-    button {
-        padding: 10px 16px;
-        margin: 5px;
-        font-size: 16px;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        background: #0078ff;
-        color: white;
-    }
-    button:hover {
-        opacity: 0.85;
-    }
-    #list {
-        background: white;
-        border-radius: 10px;
-        padding: 15px;
-        max-width: 600px;
-        margin: auto;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-    .item {
-        padding: 10px;
-        border-bottom: 1px solid #eee;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .item:last-child {
-        border-bottom: none;
-    }
-    .title {
-        font-size: 16px;
-    }
-    .actions button {
-        background: #ff4444;
-        padding: 4px 10px;
-        font-size: 14px;
-    }
-    /* 手机自适应 */
-    @media (max-width: 600px) {
-        header { font-size: 18px; }
-        button { font-size: 14px; padding: 8px 14px; }
-        .title { max-width: 60%; }
-    }
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>文本管理 · Home</title>
 </head>
 <body>
-<header>📄 文本存储系统（Cloudflare R2）</header>
-<div id="controls">
-    <button onclick="newDoc()">➕ 新建文档</button>
-</div>
-<div id="list">加载中…</div>
-
 <script>
-async function loadList() {
-    const res = await fetch('/api/list');
-    const items = await res.json();
-
-    let html = '';
-    items.forEach(id => {
-        html += `
-            <div class="item" id="row-${id}">
-                <div class="title">${id}</div>
-                <div class="actions">
-                    <button onclick="del('${id}')">删除</button>
-                    <button style="background:#00b000" onclick="go('${id}')">打开</button>
-                </div>
-            </div>`;
-    });
-
-    if (items.length === 0) html = '<p style="text-align:center;color:#777">暂无文档</p>';
-
-    document.getElementById('list').innerHTML = html;
+// 首页负责检测是否登录（通过 localStorage 的 token 标记）
+(function(){
+const token = localStorage.getItem('cf_text_token');
+if (!token) {
+location.href = '/login.html';
+} else {
+location.href = '/app.html';
 }
-
-async function del(id) {
-    if (!confirm('确认永久删除？')) return;
-
-    await fetch('/api/delete?id=' + id);
-    document.getElementById('row-' + id)?.remove();
-}
-
-function go(id) {
-    location.href = `/view.html?id=${id}`;
-}
-
-function newDoc() {
-    const id = prompt('请输入文档名称（ID）：');
-    if (!id) return;
-    location.href = `/edit.html?id=${id}`;
-}
-
-loadList();
+})();
 </script>
 </body>
 </html>
