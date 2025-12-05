@@ -1,21 +1,231 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>文本管理 · Home</title>
-</head>
-<body>
-<script>
-// 首页负责检测是否登录（通过 localStorage 的 token 标记）
-(function(){
-const token = localStorage.getItem('cf_text_token');
-if (!token) {
-location.href = '/login.html';
-} else {
-location.href = '/app.html';
+<meta charset="UTF-8">
+<title>文本管理</title>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<style>
+:root {
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --text: #000;
 }
-})();
+.dark {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --text: #e5e7eb;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui;
+  background: var(--bg);
+  color: var(--text);
+}
+.container {
+  max-width: 1000px;
+  margin: 40px auto;
+  background: var(--card);
+  padding: 25px;
+  border-radius: 14px;
+}
+
+button { padding: 8px 14px; margin: 4px; cursor: pointer; }
+textarea { width: 100%; height: 220px; }
+
+#preview {
+  border: 1px dashed #aaa;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+.hidden { display: none; }
+.item { cursor: pointer; padding: 6px; }
+.item:hover { background: #ddd; }
+</style>
+</head>
+
+<body>
+
+<!-- 登录页 -->
+<div class="container" id="loginBox">
+<h2>🔐 登录</h2>
+<input id="pwd" type="password">
+<button onclick="login()">登录</button>
+</div>
+
+<!-- 主系统 -->
+<div class="container hidden" id="app">
+
+<h2>📄 文本管理中心</h2>
+
+<button onclick="toggleDark()">🌙 黑暗模式</button>
+<button onclick="showRecycle()">🗑 回收站</button>
+
+<br><br>
+ID：<input id="fileId"><br>
+标题：<input id="title"><br>
+
+<textarea id="content"></textarea>
+
+<br>
+<button onclick="save()">💾 保存</button>
+<button onclick="remove()">❌ 删除</button>
+<button onclick="togglePreview()">👁 预览</button>
+
+<div id="share"></div>
+<div id="preview" class="hidden"></div>
+
+<hr>
+<h3>📚 文档列表</h3>
+<div id="list"></div>
+
+<h3 class="hidden" id="recTitle">♻ 回收站</h3>
+<div id="recycleList"></div>
+
+</div>
+
+<script>
+let allDocs = [];
+let currentId = '';
+
+/* 登录 */
+async function login() {
+  const pwd = document.getElementById('pwd').value;
+
+  const r = await fetch('/api/login', {
+    method: 'POST',
+    body: JSON.stringify({ password: pwd })
+  });
+
+  if (r.ok) {
+    loginBox.classList.add('hidden');
+    app.classList.remove('hidden');
+    loadList();
+  } else {
+    alert('密码错误');
+  }
+}
+
+/* 黑暗模式 */
+function toggleDark() {
+  document.body.classList.toggle('dark');
+}
+
+/* Markdown 预览 */
+function togglePreview() {
+  const box = document.getElementById('preview');
+  const text = document.getElementById('content').value;
+  box.innerHTML = marked.parse(text);
+  box.classList.toggle('hidden');
+}
+
+/* 加载列表 */
+async function loadList() {
+  const res = await fetch('/api/list');
+  const ids = await res.json();
+
+  allDocs = [];
+  for (const id of ids) {
+    const r = await fetch('/api/load?id=' + id);
+    const text = await r.text();
+    const title = text.split('\n')[0];
+    allDocs.push({ id, title, text });
+  }
+
+  document.getElementById('list').innerHTML =
+    allDocs.map(d => `<div class="item" onclick="openDoc('${d.id}')">${d.title} (${d.id})</div>`).join('');
+}
+
+/* 打开 */
+function openDoc(id) {
+  const d = allDocs.find(x => x.id === id);
+  currentId = id;
+
+  fileId.value = id;
+  const lines = d.text.split('\n');
+  title.value = lines.shift();
+  content.value = lines.join('\n');
+}
+
+/* 保存 */
+async function save() {
+  const id = fileId.value.trim();
+  const full = title.value + '\n' + content.value;
+
+  await fetch('/api/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, content: full })
+  });
+
+  share.innerHTML = location.origin + '/view.html?id=' + id;
+  loadList();
+}
+
+/* 真删除 + 回收站 */
+async function remove() {
+  if (!confirm('确定删除？可在回收站恢复')) return;
+
+  // 存入回收站
+  await fetch('/api/save', {
+    method: 'POST',
+    body: JSON.stringify({
+      id: 'RECYCLE_' + currentId,
+      content: title.value + '\n' + content.value
+    })
+  });
+
+  // 真删除
+  await fetch('/api/delete', {
+    method: 'POST',
+    body: JSON.stringify({ id: currentId })
+  });
+
+  currentId = '';
+  fileId.value = '';
+  title.value = '';
+  content.value = '';
+
+  loadList();
+}
+
+/* 回收站 */
+async function showRecycle() {
+  recTitle.classList.remove('hidden');
+
+  const r = await fetch('/api/list');
+  const ids = await r.json();
+
+  const rec = ids.filter(x => x.startsWith('RECYCLE_'));
+
+  recycleList.innerHTML = rec.map(id =>
+    `<div onclick="restore('${id}')">♻ ${id.replace('RECYCLE_','')}</div>`
+  ).join('');
+}
+
+/* 恢复 */
+async function restore(id) {
+  const r = await fetch('/api/load?id=' + id);
+  const text = await r.text();
+  const realId = id.replace('RECYCLE_','');
+
+  await fetch('/api/save', {
+    method: 'POST',
+    body: JSON.stringify({ id: realId, content: text })
+  });
+
+  await fetch('/api/delete', {
+    method: 'POST',
+    body: JSON.stringify({ id })
+  });
+
+  alert('✅ 已恢复');
+  loadList();
+}
 </script>
+
 </body>
 </html>
