@@ -5,98 +5,210 @@
 <title>文本管理中心</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- 不再需要 marked.js -->
-<!-- <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> -->
-
 <style>
-  /* 所有样式保持上一次美化版不变，只改了预览框样式 */
   :root {
-    --bg: #f8fafc;
-    --card: #ffffff;
-    --border: #e2e8f0;
-    --text: #1e293b;
-    --text-light: #64748b;
-    --primary: #6366f1;
-    --primary-hover: #4f46e5;
-    --danger: #ef4444;
-    --danger-hover: #dc2626;
-    --success: #10b981;
-    --gray-bg: #f1f5f9;
-    --shadow: 0 10px 25px -5px rgba(0,0,0,0.08);
+    --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0; --text: #1e293b; --text-light: #64748b;
+    --primary: #6366f1; --primary-hover: #4f46e5; --danger: #ef4444; --danger-hover: #dc2626;
+    --gray-bg: #f1f5f9; --shadow: 0 10px 25px -5px rgba(0,0,0,0.08);
   }
   .dark {
-    --bg: #0f172a;
-    --card: #1e293b;
-    --border: #334155;
-    --text: #e2e8f0;
-    --text-light: #94a3b8;
-    --primary: #818cf8;
-    --primary-hover: #6366f1;
-    --gray-bg: #1e293b;
+    --bg: #0f172a; --card: #1e293b; --border: #334155; --text: #e2e8f0; --text-light: #94a3b8;
+    --primary: #818cf8; --primary-hover: #6366f1; --gray-bg: #1e293b;
     --shadow: 0 10px 25px -5px rgba(0,0,0,0.4);
   }
-
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.6;
-    min-height: 100vh;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-  }
-
-  /* ... 下面所有样式和上一个版本完全一样，只贴出修改的部分 ... */
-
-  /* 纯文本预览框（原汁原味） */
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.6; min-height:100vh; }
+  .container { max-width:1100px; margin:20px auto; padding:20px; }
+  .card { background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:24px;
+    border:1px solid var(--border); }
+  h2 { margin:0 0 24px; font-size:1.8rem; font-weight:600; }
+  input, textarea { width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:10px;
+    font-size:16px; background:var(--card); color:var(--text); margin-bottom:12px; transition:all .2s; }
+  input:focus, textarea:focus { outline:none; border-color:var(--primary);
+    box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+  textarea { min-height:280px; resize:vertical; font-family:Menlo,Monaco,Consolas,monospace; }
+  .btn-group { display:flex; flex-wrap:wrap; gap:10px; margin:16px 0; }
+  button { padding:10px 18px; border:none; border-radius:10px; font-size:15px; font-weight:500;
+    cursor:pointer; transition:all .2s; display:inline-flex; align-items:center; gap:6px; }
+  .btn-primary { background:var(--primary); color:white; }
+  .btn-primary:hover { background:var(--primary-hover); transform:translateY(-1px); }
+  .btn-danger { background:var(--danger); color:white; }
+  .btn-danger:hover { background:var(--danger-hover); }
+  .btn-outline { background:transparent; border:1.5px solid var(--border); color:var(--text); }
+  .btn-outline:hover { background:var(--gray-bg); }
+  #share { margin:16px 0; padding:14px; background:var(--gray-bg); border-radius:10px;
+    font-family:monospace; word-break:break-all; color:var(--primary); font-weight:500; }
   #preview {
-    margin-top: 20px;
-    padding: 20px;
-    border: 1.5px dashed var(--border);
-    border-radius: 12px;
-    background: var(--card);
-    font-family: 'Menlo', 'Monaco', 'Consolas', monospace;  /* 等宽字体更舒服 */
-    font-size: 15px;
-    line-height: 1.7;
-    white-space: pre-wrap;       /* 保留换行和空格 */
-    word-wrap: break-word;
-    max-height: 500px;
-    overflow-y: auto;
-    color: var(--text);
+    margin-top:20px; padding:20px; border:1.5px dashed var(--border); border-radius:12px;
+    background:var(--card); font-family:Menlo,Monaco,Consolas,monospace; font-size:15px;
+    line-height:1.7; white-space:pre-wrap; word-wrap:break-word; max-height:500px;
+    overflow-y:auto; color:var(--text);
   }
-
-  /* 其余样式全部保持不变（省略几百行，实际使用时直接复制完整版） */
-  /* ... 下面贴完整代码，只改了这几处 ... */
+  .doc-list { display:grid; gap:10px; margin-top:20px; }
+  .item { padding:14px 16px; background:var(--gray-bg); border-radius:10px; cursor:pointer;
+    transition:all .2s; border-left:4px solid var(--primary); }
+  .item:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.1); }
+  .recycle-item { border-left-color:var(--danger); opacity:0.8; }
+  hr { border:none; height:1px; background:var(--border); margin:32px 0; }
+  .hidden { display:none !important; }
+  @media (min-width:860px) {
+    .main-grid { display:grid; grid-template-columns:1fr 340px; gap:24px; }
+  }
+  @media (max-width:600px) {
+    .container{padding:12px}.card{padding:18px}h2{font-size:1.5rem}
+    .btn-group button{flex:1;justify-content:center}
+    textarea{min-height:200px}
+  }
+  .fade-in { animation:fadeIn .4s ease-in; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
 </style>
 </head>
-
 <body>
-  <!-- HTML 结构完全不变 -->
 
-  <!-- 登录页和主界面保持上一次美化版结构 -->
+<div class="container" id="loginBox">
+  <div class="card">
+    <h2>登录系统</h2>
+    <input id="pwd" type="password" placeholder="请输入密码" autofocus>
+    <div class="btn-group"><button class="btn-primary" onclick="login()">登录</button></div>
+  </div>
+</div>
 
-  <!-- 关键：只改了这一个函数 -->
-  <script>
-    let allDocs = [];
-    let currentId = '';
+<div class="container hidden fade-in" id="app">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+      <h2>文本管理中心</h2>
+      <div>
+        <button class="btn-outline" onclick="toggleDark()">黑暗模式</button>
+        <button class="btn-outline" onclick="showRecycle()">回收站</button>
+      </div>
+    </div>
 
-    /* 其他函数全部不变，只改 togglePreview */
-    function togglePreview() {
-      const box = document.getElementById('preview');
-      const text = document.getElementById('content').value;
+    <div class="main-grid">
+      <div class="editor-section">
+        <label style="font-weight:500;color:var(--text-light);">文档 ID</label>
+        <input id="fileId" placeholder="留空自动生成">
 
-      // 改成纯文本显示（原汁原味）
-      box.textContent = text || '(空)';
-      box.classList.toggle('hidden');
-    }
+        <label style="font-weight:500;color:var(--text-light);">标题（第一行）</label>
+        <input id="title" placeholder="输入标题">
 
-    /* 下面所有函数（login、save、loadList、remove 等）全部和上一个美化版一模一样 */
-    /* 我把它们完整保留，只贴出关键修改点，实际使用请直接替换整个 <script> 块 */
+        <label style="font-weight:500;color:var(--text-light);">正文内容</label>
+        <textarea id="content" placeholder="开始写作吧..."></textarea>
 
-    // ... 其余代码完全复制上一个美化版 ...
-    // （为了篇幅这里省略，但实际代码里全部保留）
+        <div class="btn-group">
+          <button class="btn-primary" onclick="save()">保存文档</button>
+          <button class="btn-danger" onclick="remove()">删除</button>
+          <button class="btn-outline" onclick="togglePreview()">预览</button>
+        </div>
 
-  </script>
+        <div id="share"></div>
+        <div id="preview" class="hidden"></div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3 style="margin-top:0;">文档列表</h3>
+        <div class="doc-list" id="list"></div>
+        <h3 class="hidden" id="recTitle" style="margin:32px 0 12px;">回收站</h3>
+        <div class="doc-list" id="recycleList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let allDocs = []; let currentId = '';
+
+async function login() {
+  const pwd = document.getElementById('pwd').value;
+  const r = await fetch('/api/login', {method:'POST', body:JSON.stringify({password:pwd})});
+  if (r.ok) {
+    document.getElementById('loginBox').classList.add('hidden');
+    const app = document.getElementById('app');
+    app.classList.remove('hidden');
+    setTimeout(()=>app.classList.add('fade-in'),50);
+    loadList();
+  } else alert('密码错误');
+}
+
+function toggleDark() { document.body.classList.toggle('dark'); }
+
+// 关键修改：纯文本预览，原汁原味
+function togglePreview() {
+  const box = document.getElementById('preview');
+  const text = document.getElementById('content').value;
+  box.textContent = text || '(空)';
+  box.classList.toggle('hidden');
+}
+
+async function loadList() {
+  const res = await fetch('/api/list');
+  const ids = await res.json();
+  allDocs = [];
+  for (const id of ids) {
+    if (id.startsWith('RECYCLE_')) continue;
+    const r = await fetch('/api/load?id='+id);
+    const text = await r.text();
+    const title = text.split('\n')[0].trim()||'无标题';
+    allDocs.push({id, title, text});
+  }
+  document.getElementById('list').innerHTML = allDocs.map(d=>`
+    <div class="item" onclick="openDoc('${d.id}')">
+      <div style="font-weight:600;">${d.title}</div>
+      <div style="font-size:0.9em;color:var(--text-light);margin-top:4px;">${d.id}</div>
+    </div>`).join('');
+}
+
+function openDoc(id) {
+  const d = allDocs.find(x=>x.id===id);
+  currentId = id;
+  fileId.value = id;
+  const lines = d.text.split('\n');
+  title.value = lines.shift()||'';
+  content.value = lines.join('\n');
+  if (window.innerWidth<768) { content.focus(); content.scrollIntoView({behavior:'smooth',block:'center'}); }
+}
+
+async function save() {
+  const id = (fileId.value||crypto.randomUUID()).trim();
+  const full = (title.value||'无标题') + '\n' + content.value;
+  await fetch('/api/save', {method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({id, content:full})});
+  fileId.value = id;
+  share.innerHTML = `<strong>分享链接：</strong><br>${location.origin}/view.html?id=${id}`;
+  loadList();
+}
+
+async function remove() {
+  if (!confirm('确定删除？可在回收站恢复')) return;
+  await fetch('/api/save', {method:'POST', body:JSON.stringify({
+    id:'RECYCLE_'+currentId, content:title.value+'\n'+content.value})});
+  await fetch('/api/delete', {method:'POST', body:JSON.stringify({id:currentId})});
+  currentId=''; fileId.value=title.value=content.value=''; share.innerHTML='';
+  loadList();
+}
+
+async function showRecycle() {
+  document.getElementById('recTitle').classList.remove('hidden');
+  const r = await fetch('/api/list');
+  const ids = await r.json();
+  const rec = ids.filter(x=>x.startsWith('RECYCLE_'));
+  document.getElementById('recycleList').innerHTML = rec.map(id=>`
+    <div class="item recycle-item" onclick="restore('${id}')">
+      <div>已删除：${id.replace('RECYCLE_','')}</div>
+      <div style="font-size:0.85em;margin-top:4px;opacity:0.8;">点击恢复</div>
+    </div>`).join('');
+}
+
+async function restore(id) {
+  const r = await fetch('/api/load?id='+id);
+  const text = await r.text();
+  const realId = id.replace('RECYCLE_','');
+  await fetch('/api/save', {method:'POST', body:JSON.stringify({id:realId, content:text})});
+  await fetch('/api/delete', {method:'POST', body:JSON.stringify({id})});
+  alert('已恢复');
+  document.getElementById('recTitle').classList.add('hidden');
+  loadList();
+}
+</script>
 </body>
 </html>
