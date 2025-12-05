@@ -3,120 +3,87 @@
 <head>
 <meta charset="UTF-8">
 <title>文本管理</title>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
 <style>
+:root {
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --text: #000;
+}
+.dark {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --text: #e5e7eb;
+}
+
 body {
-  font-family: system-ui;
-  background: #f6f7fb;
   margin: 0;
-  padding: 0;
+  font-family: system-ui;
+  background: var(--bg);
+  color: var(--text);
 }
 .container {
   max-width: 1000px;
   margin: 40px auto;
-  background: white;
+  background: var(--card);
   padding: 25px;
   border-radius: 14px;
-  box-shadow: 0 10px 25px rgba(0,0,0,.08);
 }
-h1 { text-align: center; }
 
-.top {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-input, textarea {
+button { padding: 8px 14px; margin: 4px; cursor: pointer; }
+textarea { width: 100%; height: 220px; }
+
+#preview {
+  border: 1px dashed #aaa;
   padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  font-size: 14px;
-}
-textarea {
-  width: 100%;
-  height: 260px;
-  resize: vertical;
-}
-
-button {
-  border: none;
-  padding: 10px 18px;
-  border-radius: 8px;
-  cursor: pointer;
-  background: #4f46e5;
-  color: white;
-}
-button:hover { opacity: .9; }
-
-.save-btn { background: #16a34a; }
-.del-btn { background: #dc2626; }
-.new-btn { background: #2563eb; }
-
-.actions {
   margin-top: 10px;
-  display: flex;
-  gap: 10px;
-  align-items: center;
 }
 
-#share {
-  font-size: 14px;
-  color: #2563eb;
-  word-break: break-all;
-}
-
-.list {
-  margin-top: 25px;
-  border-top: 1px solid #eee;
-  padding-top: 15px;
-}
-
-.item {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-}
-.item:hover { background: #f1f5f9; }
-
-.meta { font-size: 13px; color: #666; }
-
-.search {
-  width: 100%;
-  margin: 10px 0;
-}
+.hidden { display: none; }
+.item { cursor: pointer; padding: 6px; }
+.item:hover { background: #ddd; }
 </style>
 </head>
 
 <body>
-<div class="container">
-<h1>📄 文本管理中心</h1>
 
-<!-- 搜索 -->
-<input class="search" id="search" placeholder="🔍 搜索 ID 或标题..." oninput="renderList()">
-
-<!-- 新建 -->
-<div class="top">
-  <input id="fileId" placeholder="自定义ID">
-  <button class="new-btn" onclick="newDoc()">➕ 新建</button>
+<!-- 登录页 -->
+<div class="container" id="loginBox">
+<h2>🔐 登录</h2>
+<input id="pwd" type="password">
+<button onclick="login()">登录</button>
 </div>
 
-<!-- 标题 -->
-<input id="title" placeholder="请输入标题（第一行显示为列表标题）">
+<!-- 主系统 -->
+<div class="container hidden" id="app">
 
-<!-- 内容 -->
-<textarea id="content" placeholder="请输入正文..."></textarea>
+<h2>📄 文本管理中心</h2>
 
-<div class="actions">
-  <button class="save-btn" onclick="save()">💾 保存</button>
-  <button class="del-btn" onclick="remove()">🗑 删除</button>
-  <span id="share"></span>
-</div>
+<button onclick="toggleDark()">🌙 黑暗模式</button>
+<button onclick="showRecycle()">🗑 回收站</button>
 
-<div class="list">
-  <b>已有文档：</b>
-  <div id="list">加载中...</div>
-</div>
+<br><br>
+ID：<input id="fileId"><br>
+标题：<input id="title"><br>
+
+<textarea id="content"></textarea>
+
+<br>
+<button onclick="save()">💾 保存</button>
+<button onclick="remove()">❌ 删除</button>
+<button onclick="togglePreview()">👁 预览</button>
+
+<div id="share"></div>
+<div id="preview" class="hidden"></div>
+
+<hr>
+<h3>📚 文档列表</h3>
+<div id="list"></div>
+
+<h3 class="hidden" id="recTitle">♻ 回收站</h3>
+<div id="recycleList"></div>
 
 </div>
 
@@ -124,111 +91,141 @@ button:hover { opacity: .9; }
 let allDocs = [];
 let currentId = '';
 
+/* 登录 */
+async function login() {
+  const pwd = document.getElementById('pwd').value;
+
+  const r = await fetch('/api/login', {
+    method: 'POST',
+    body: JSON.stringify({ password: pwd })
+  });
+
+  if (r.ok) {
+    loginBox.classList.add('hidden');
+    app.classList.remove('hidden');
+    loadList();
+  } else {
+    alert('密码错误');
+  }
+}
+
+/* 黑暗模式 */
+function toggleDark() {
+  document.body.classList.toggle('dark');
+}
+
+/* Markdown 预览 */
+function togglePreview() {
+  const box = document.getElementById('preview');
+  const text = document.getElementById('content').value;
+  box.innerHTML = marked.parse(text);
+  box.classList.toggle('hidden');
+}
+
+/* 加载列表 */
 async function loadList() {
   const res = await fetch('/api/list');
   const ids = await res.json();
-  allDocs = [];
 
+  allDocs = [];
   for (const id of ids) {
     const r = await fetch('/api/load?id=' + id);
     const text = await r.text();
-    const title = text.split('\n')[0] || '(无标题)';
+    const title = text.split('\n')[0];
     allDocs.push({ id, title, text });
   }
 
-  renderList();
+  document.getElementById('list').innerHTML =
+    allDocs.map(d => `<div class="item" onclick="openDoc('${d.id}')">${d.title} (${d.id})</div>`).join('');
 }
 
-function renderList() {
-  const kw = document.getElementById('search').value.toLowerCase();
-  const listDiv = document.getElementById('list');
-
-  const filtered = allDocs.filter(d =>
-    d.id.toLowerCase().includes(kw) ||
-    d.title.toLowerCase().includes(kw)
-  );
-
-  if (filtered.length === 0) {
-    listDiv.innerHTML = '暂无匹配文档';
-    return;
-  }
-
-  listDiv.innerHTML = filtered.map(d =>
-    `<div class="item" onclick="openDoc('${d.id}')">
-      <div>
-        <b>${d.title}</b>
-        <div class="meta">${d.id}</div>
-      </div>
-    </div>`
-  ).join('');
-}
-
+/* 打开 */
 function openDoc(id) {
-  const doc = allDocs.find(d => d.id === id);
-  if (!doc) return;
-
+  const d = allDocs.find(x => x.id === id);
   currentId = id;
-  document.getElementById('fileId').value = id;
 
-  const lines = doc.text.split('\n');
-  document.getElementById('title').value = lines.shift();
-  document.getElementById('content').value = lines.join('\n');
-
-  showShare(id);
+  fileId.value = id;
+  const lines = d.text.split('\n');
+  title.value = lines.shift();
+  content.value = lines.join('\n');
 }
 
-function newDoc() {
-  currentId = '';
-  document.getElementById('fileId').value = '';
-  document.getElementById('title').value = '';
-  document.getElementById('content').value = '';
-  document.getElementById('share').innerHTML = '';
-}
-
+/* 保存 */
 async function save() {
-  const id = document.getElementById('fileId').value.trim();
-  const title = document.getElementById('title').value.trim();
-  const content = document.getElementById('content').value;
-
-  if (!id) return alert('请输入 ID');
-
-  const fullText = title + '\n' + content;
+  const id = fileId.value.trim();
+  const full = title.value + '\n' + content.value;
 
   await fetch('/api/save', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, content: fullText })
+    body: JSON.stringify({ id, content: full })
   });
 
-  showShare(id);
-  await loadList();
-}
-
-async function remove() {
-  if (!currentId) return alert('未选中文档');
-
-  if (!confirm('确定要删除该文档吗？不可恢复！')) return;
-
-  await fetch('/api/save', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: currentId, content: '__DELETE__' })
-  });
-
-  await fetch('/api/load?id=' + currentId); // 触发 KV 覆盖
-  alert('✅ 已删除');
-
-  newDoc();
+  share.innerHTML = location.origin + '/view.html?id=' + id;
   loadList();
 }
 
-function showShare(id) {
-  const link = location.origin + '/view.html?id=' + id;
-  document.getElementById('share').innerHTML =
-    `分享链接：<a href="${link}" target="_blank">${link}</a>`;
+/* 真删除 + 回收站 */
+async function remove() {
+  if (!confirm('确定删除？可在回收站恢复')) return;
+
+  // 存入回收站
+  await fetch('/api/save', {
+    method: 'POST',
+    body: JSON.stringify({
+      id: 'RECYCLE_' + currentId,
+      content: title.value + '\n' + content.value
+    })
+  });
+
+  // 真删除
+  await fetch('/api/delete', {
+    method: 'POST',
+    body: JSON.stringify({ id: currentId })
+  });
+
+  currentId = '';
+  fileId.value = '';
+  title.value = '';
+  content.value = '';
+
+  loadList();
 }
 
-loadList();
+/* 回收站 */
+async function showRecycle() {
+  recTitle.classList.remove('hidden');
+
+  const r = await fetch('/api/list');
+  const ids = await r.json();
+
+  const rec = ids.filter(x => x.startsWith('RECYCLE_'));
+
+  recycleList.innerHTML = rec.map(id =>
+    `<div onclick="restore('${id}')">♻ ${id.replace('RECYCLE_','')}</div>`
+  ).join('');
+}
+
+/* 恢复 */
+async function restore(id) {
+  const r = await fetch('/api/load?id=' + id);
+  const text = await r.text();
+  const realId = id.replace('RECYCLE_','');
+
+  await fetch('/api/save', {
+    method: 'POST',
+    body: JSON.stringify({ id: realId, content: text })
+  });
+
+  await fetch('/api/delete', {
+    method: 'POST',
+    body: JSON.stringify({ id })
+  });
+
+  alert('✅ 已恢复');
+  loadList();
+}
 </script>
+
 </body>
 </html>
