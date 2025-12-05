@@ -1,22 +1,22 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh">
 <head>
-<meta charset="UTF-8">
-<title>查看文本</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>查看文档</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>body{font-family:system-ui;padding:20px;max-width:900px;margin:auto}</style>
 </head>
 <body>
-
-<pre id="content">加载中...</pre>
-
+<div id="content">加载中...</div>
 <script>
-const id = new URLSearchParams(location.search).get('id');
-
-fetch('/api/load?id=' + id)
-  .then(r => r.text())
-  .then(t => {
-    document.getElementById('content').innerText = t;
-  });
+const id = new URL(location.href).searchParams.get('id');
+fetch('/api/load?id=' + encodeURIComponent(id)).then(r=>r.text()).then(t=>{
+const lines = t.split('\n');
+const title = lines.shift();
+document.title = title || '文档';
+document.getElementById('content').innerHTML = `<h1>${title}</h1>` + marked.parse(lines.join('\n'));
+}).catch(e=>{document.getElementById('content').innerText='未找到'});
 </script>
-
 </body>
 </html>
