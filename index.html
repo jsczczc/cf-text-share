@@ -2,42 +2,90 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>文本分享</title>
+<title>文本管理</title>
 <style>
-body { max-width: 900px; margin: 30px auto; font-family: system-ui }
+body { max-width: 1000px; margin: 30px auto; font-family: system-ui }
 textarea { width: 100%; height: 300px; margin-top: 10px }
 input, button { padding: 8px; margin-top: 10px }
+#list { margin-top: 20px }
+.item { cursor: pointer; color: blue; margin: 5px 0 }
+.item:hover { text-decoration: underline }
 </style>
 </head>
 <body>
 
-<h2>文本上传 / 修改</h2>
+<h2>文本管理中心</h2>
 
-<input id="fileId" placeholder="文本ID（留空自动生成）" />
+<button onclick="newDoc()">➕ 新建文档</button>
+
+<div id="list">加载中...</div>
+
+<hr>
+
+<input id="fileId" placeholder="文本ID" readonly />
 <textarea id="content" placeholder="请输入文本内容"></textarea>
 <br>
-<button onclick="submitText()">提交</button>
+<button onclick="save()">💾 保存</button>
 
 <p id="result"></p>
 
 <script>
-async function submitText(){
-  const id = document.getElementById('fileId').value || Date.now().toString();
+let currentId = null;
+
+/* 加载文档列表 */
+async function loadList() {
+  const res = await fetch('/api/list');
+  const ids = await res.json();
+
+  if (ids.length === 0) {
+    document.getElementById('list').innerHTML = '暂无文档';
+    return;
+  }
+
+  document.getElementById('list').innerHTML =
+    '<b>已有文档：</b><br>' +
+    ids.map(id => `<div class="item" onclick="openDoc('${id}')">${id}</div>`).join('');
+}
+
+/* 打开已有文档 */
+async function openDoc(id) {
+  currentId = id;
+  document.getElementById('fileId').value = id;
+
+  const res = await fetch('/api/load?id=' + id);
+  const text = await res.text();
+
+  document.getElementById('content').value = text;
+}
+
+/* 新建文档 */
+function newDoc() {
+  currentId = Date.now().toString();
+  document.getElementById('fileId').value = currentId;
+  document.getElementById('content').value = '';
+}
+
+/* 保存文档 */
+async function save() {
+  const id = document.getElementById('fileId').value;
   const content = document.getElementById('content').value;
 
-  const res = await fetch('/api/save', {
+  if (!id) {
+    alert('请先新建或选择一个文档');
+    return;
+  }
+
+  await fetch('/api/save', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({id, content})
+    body: JSON.stringify({ id, content })
   });
 
-  const data = await res.json();
-  document.getElementById('result').innerHTML =
-    `✅ 成功！<br>访问链接：<br>
-     <a target="_blank" href="/view.html?id=${id}">
-       ${location.origin}/view.html?id=${id}
-     </a>`;
+  document.getElementById('result').innerText = '✅ 已保存';
+  loadList(); // 刷新列表
 }
+
+loadList(); // 页面加载时自动加载列表
 </script>
 
 </body>
