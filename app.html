@@ -1,0 +1,65 @@
+<!doctype html>
+// move to trash: save with prefix then delete original
+const data = await fetch('/api/load?id=' + encodeURIComponent(id));
+const txt = await data.text();
+await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'TRASH_'+id,content:txt})});
+await fetch('/api/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+await loadAll();
+alert('已移入回收站');
+}
+
+
+async function showTrash(){
+document.getElementById('trashPanel').classList.remove('hidden');
+const r = await fetch('/api/list');
+const ids = await r.json();
+const trashIds = ids.filter(i=>i.startsWith('TRASH_'));
+const el = document.getElementById('trashList');
+if (!trashIds.length) el.innerHTML = '<div>回收站空</div>';
+else el.innerHTML = trashIds.map(id => `<div><b>${id.replace('TRASH_','')}</b> <button onclick="restore('${id}')">恢复</button> <button onclick="permDel('${id}')">永久删除</button></div>`).join('');
+}
+
+
+async function closeTrash(){ document.getElementById('trashPanel').classList.add('hidden'); }
+
+
+async function restore(trashId){
+const r = await fetch('/api/load?id=' + encodeURIComponent(trashId));
+const txt = await r.text();
+const realId = trashId.replace('TRASH_','');
+await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:realId,content:txt})});
+await fetch('/api/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:trashId})});
+await loadAll();
+showTrash();
+alert('已恢复');
+}
+
+
+async function permDel(trashId){
+if(!confirm('永久删除？不可恢复')) return;
+await fetch('/api/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:trashId})});
+showTrash();
+await loadAll();
+}
+
+
+function showLink(id){document.getElementById('link').innerHTML = `<a target=_blank href="/view.html?id=${encodeURIComponent(id)}">查看: /view.html?id=${encodeURIComponent(id)}</a>`}
+
+
+function togglePreview(){
+const p = document.getElementById('preview');
+if(p.classList.contains('hidden')){ p.innerHTML = marked.parse(document.getElementById('content').value); p.classList.remove('hidden'); }
+else p.classList.add('hidden');
+}
+
+
+function toggleDark(){ dark = !dark; document.documentElement.classList.toggle('dark'); }
+
+
+function logout(){ localStorage.removeItem('cf_text_token'); location.href='/login.html'; }
+
+
+loadAll();
+</script>
+</body>
+</html>
