@@ -4,89 +4,154 @@
 <meta charset="UTF-8">
 <title>文本管理</title>
 <style>
-body { max-width: 1000px; margin: 30px auto; font-family: system-ui }
-textarea { width: 100%; height: 300px; margin-top: 10px }
-input, button { padding: 8px; margin-top: 10px }
-#list { margin-top: 20px }
-.item { cursor: pointer; color: blue; margin: 5px 0 }
-.item:hover { text-decoration: underline }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+  background: #f5f7fa;
+}
+.container {
+  display: flex;
+  height: 100vh;
+}
+.sidebar {
+  width: 260px;
+  background: #ffffff;
+  border-right: 1px solid #ddd;
+  padding: 15px;
+  overflow-y: auto;
+}
+.sidebar h3 {
+  margin-top: 0;
+}
+.doc-item {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+.doc-item:hover {
+  background: #e8f0fe;
+}
+.main {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+.top-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+input {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+textarea {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-top: 10px;
+}
+button {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+}
+button:hover {
+  background: #1d4ed8;
+}
+.link-box {
+  margin-top: 8px;
+  background: #eef2ff;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  word-break: break-all;
+}
+.copy-btn {
+  margin-left: 10px;
+  background: #10b981;
+}
+.copy-btn:hover {
+  background: #059669;
+}
+.status {
+  margin-top: 8px;
+  font-size: 13px;
+  color: green;
+}
 </style>
 </head>
 <body>
 
-<h2>文本管理中心</h2>
+<div class="container">
 
-<button onclick="newDoc()">➕ 新建文档</button>
+  <!-- 左侧文档列表 -->
+  <div class="sidebar">
+    <h3>📄 文档列表</h3>
+    <button style="width:100%;margin-bottom:10px" onclick="newDoc()">➕ 新建文档</button>
+    <div id="list">加载中...</div>
+  </div>
 
-<div id="list">加载中...</div>
+  <!-- 右侧编辑区 -->
+  <div class="main">
+    <div class="top-bar">
+      <input id="fileId" placeholder="自定义文档 ID（必填）" />
+      <button onclick="autoId()">自动生成</button>
+      <button onclick="save()">💾 保存</button>
+    </div>
 
-<hr>
+    <textarea id="content" placeholder="请输入文本内容..."></textarea>
 
-<input id="fileId" placeholder="文本ID" readonly />
-<textarea id="content" placeholder="请输入文本内容"></textarea>
-<br>
-<button onclick="save()">💾 保存</button>
+    <div id="share" style="display:none" class="link-box"></div>
+    <div id="status" class="status"></div>
+  </div>
 
-<p id="result"></p>
+</div>
 
 <script>
 let currentId = null;
 
-/* 加载文档列表 */
-async function loadList() {
+/* 生成可读性更好的时间ID */
+function autoId(){
+  const d = new Date();
+  const id =
+    d.getFullYear().toString() +
+    (d.getMonth()+1).toString().padStart(2,'0') +
+    d.getDate().toString().padStart(2,'0') +
+    d.getHours().toString().padStart(2,'0') +
+    d.getMinutes().toString().padStart(2,'0') +
+    d.getSeconds().toString().padStart(2,'0');
+
+  document.getElementById('fileId').value = id;
+}
+
+/* 加载列表 */
+async function loadList(){
   const res = await fetch('/api/list');
   const ids = await res.json();
 
-  if (ids.length === 0) {
+  if (!ids.length){
     document.getElementById('list').innerHTML = '暂无文档';
     return;
   }
 
   document.getElementById('list').innerHTML =
-    '<b>已有文档：</b><br>' +
-    ids.map(id => `<div class="item" onclick="openDoc('${id}')">${id}</div>`).join('');
+    ids.map(id => `<div class="doc-item" onclick="openDoc('${id}')">${id}</div>`).join('');
 }
 
-/* 打开已有文档 */
-async function openDoc(id) {
+/* 打开文档 */
+async function openDoc(id){
   currentId = id;
   document.getElementById('fileId').value = id;
 
-  const res = await fetch('/api/load?id=' + id);
-  const text = await res.text();
-
-  document.getElementById('content').value = text;
-}
-
-/* 新建文档 */
-function newDoc() {
-  currentId = Date.now().toString();
-  document.getElementById('fileId').value = currentId;
-  document.getElementById('content').value = '';
-}
-
-/* 保存文档 */
-async function save() {
-  const id = document.getElementById('fileId').value;
-  const content = document.getElementById('content').value;
-
-  if (!id) {
-    alert('请先新建或选择一个文档');
-    return;
-  }
-
-  await fetch('/api/save', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ id, content })
-  });
-
-  document.getElementById('result').innerText = '✅ 已保存';
-  loadList(); // 刷新列表
-}
-
-loadList(); // 页面加载时自动加载列表
-</script>
-
-</body>
-</html>
+  const res = aw
