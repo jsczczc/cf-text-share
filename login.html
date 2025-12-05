@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>登录</title>
+<style>
+body{font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;background:#f6f7fb;margin:0}
+.box{background:white;padding:24px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.06);width:320px}
+input{width:100%;padding:10px;margin-top:8px;border-radius:8px;border:1px solid #ddd}
+button{margin-top:12px;padding:10px 14px;border-radius:8px;background:#2563eb;color:white;border:none}
+</style>
+</head>
+<body>
+<div class="box">
+<h3>🔐 管理登录</h3>
+<input id="pwd" type="password" placeholder="请输入管理员密码">
+<button onclick="doLogin()">登录</button>
+<p id="msg" style="color:#d00"></p>
+</div>
+
+
+<script>
+async function doLogin(){
+const pwd = document.getElementById('pwd').value;
+try{
+const r = await fetch('/api/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pwd})});
+if (r.ok){
+localStorage.setItem('cf_text_token','ok');
+location.href = '/app.html';
+} else {
+document.getElementById('msg').innerText = '密码错误';
+}
+}catch(e){document.getElementById('msg').innerText='网络错误'}
+}
+</script>
+</body>
+</html>
